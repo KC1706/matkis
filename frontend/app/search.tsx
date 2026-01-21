@@ -100,7 +100,7 @@ export default function SearchScreen() {
             style={styles.errorIllustration}
             resizeMode="contain"
           />
-          <Text style={styles.errorText}>NOT FOUND!!!!</Text>
+         
         </View>
       );
     }
