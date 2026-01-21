@@ -1,15 +1,12 @@
 [build]
-  command = "cd netlify && npm install && cd ../frontend && npm install && npm run build:web"
+  command = "cd frontend && npm install && npm run build:web"
   publish = "frontend/.expo/web"
-  functions = "netlify/functions"
 
 [dev]
-  publish = "public"
+  command = "cd frontend && npm start"
+  publish = "frontend/.expo/web"
 
-[functions]
-  node_bundler = "esbuild"
-  included_files = ["netlify/functions/**"]
-
+# SPA routing - redirect all routes to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"

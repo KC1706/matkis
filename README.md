@@ -204,29 +204,46 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instruction
 
 See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for detailed Railway deployment instructions.
 
-Quick steps:
+**Quick steps:**
 1. Create Railway project
 2. Add PostgreSQL and Redis services
 3. Deploy Golang backend
 4. Configure environment variables
 5. Run migrations
-6. Seed data (optional)
+6. Seed data (10,000+ users)
+
+**Live Backend URL**: `https://your-backend.up.railway.app` (Replace with your actual Railway URL)
 
 ### Frontend (Netlify/Vercel)
 
-1. Build web version:
-```bash
-cd frontend
-npm run build:web
-```
+See [DEPLOYMENT_FRONTEND.md](./DEPLOYMENT_FRONTEND.md) for comprehensive frontend deployment guide.
 
-2. Deploy to Netlify:
-```bash
-netlify deploy --prod
-```
+**Quick steps:**
+1. Build web version:
+   ```bash
+   cd frontend
+   npm run build:web
+   ```
+
+2. Deploy to Netlify or Vercel:
+   - **Netlify**: Connect GitHub repo, configure build settings
+   - **Vercel**: Import project, configure build settings
 
 3. Set environment variable:
    - `EXPO_PUBLIC_API_URL`: Your Railway backend URL
+
+**Live Frontend URL**: `https://your-frontend.netlify.app` or `https://your-project.vercel.app` (Replace with your actual URL)
+
+### Deployment Links
+
+For assignment submission, provide:
+
+- ✅ **GitHub Repository**: [Your Repository URL]
+- ✅ **Deployed Web App**: [Your Frontend URL]
+- ✅ **Backend API**: [Your Backend URL]
+- ✅ **Video Demo**: [Optional - Your Video Link]
+
+See [DEPLOYMENT_COMPLETE.md](./DEPLOYMENT_COMPLETE.md) for complete deployment summary and checklist.
 
 ## Performance
 
