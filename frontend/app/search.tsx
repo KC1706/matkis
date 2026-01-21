@@ -88,7 +88,6 @@ export default function SearchScreen() {
             style={styles.errorIllustration}
             resizeMode="contain"
           />
-          <Text style={styles.errorText}>NOT FOUND!!!!</Text>
         </View>
       );
     }
@@ -113,8 +112,6 @@ export default function SearchScreen() {
           style={styles.emptyIllustration}
           resizeMode="contain"
         />
-        <Text style={styles.emptyTitle}>Search by Name</Text>
-        <Text style={styles.emptySubtitle}>Ex. Rahul</Text>
       </View>
     );
   };
