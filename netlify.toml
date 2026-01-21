@@ -1,6 +1,6 @@
 [build]
   command = "cd frontend && npm install && npm run build:web"
-  publish = "frontend/.expo/web"
+  publish = "frontend/dist"
 
 [dev]
   command = "cd frontend && npm start"
