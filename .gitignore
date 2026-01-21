@@ -10,6 +10,12 @@ build/
 lib/
 *.log
 
+# Go build artifacts
+backend/seed
+backend/seed-linux
+backend/server
+backend/*.exe
+
 # Environment variables
 .env
 .env.local
@@ -32,9 +38,8 @@ ui-debug.log
 # Netlify
 .netlify/
 
-# Archived/Deprecated (old Node.js implementation)
-# netlify/functions/
-# functions/
+# Archived/Deprecated (old Node.js implementation - removed)
+# These directories have been deleted as part of cleanup
 
 # Service account keys
 *-service-account.json
