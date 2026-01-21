@@ -5,23 +5,26 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2196F3',
-        tabBarInactiveTintColor: '#666',
         headerShown: false,
+        tabBarStyle: { display: 'none' }, // Hide default tab bar
       }}
     >
       <Tabs.Screen
+        name="index"
+        options={{
+          href: null, // Hide from tabs
+        }}
+      />
+      <Tabs.Screen
         name="leaderboard"
         options={{
-          title: 'Leaderboard',
-          tabBarIcon: () => null,
+          href: null, // Hide from tabs - using custom nav
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
-          tabBarIcon: () => null,
+          href: null, // Hide from tabs - using custom nav
         }}
       />
     </Tabs>

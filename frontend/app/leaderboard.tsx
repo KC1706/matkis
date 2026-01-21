@@ -12,6 +12,7 @@ import { apiService } from '../services/api';
 import { LeaderboardEntry } from '../services/types';
 import { UserCard } from '../components/UserCard';
 import { usePolling } from '../hooks/usePolling';
+import { BottomNavigation } from '../components/BottomNavigation';
 
 export default function LeaderboardScreen() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -105,21 +106,25 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Leaderboard</Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>🏆 Leaderboard</Text>
+          <Text style={styles.subtitle}>Top Players</Text>
+        </View>
+        <FlatList
+          data={entries}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.user_id.toString()}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          contentContainerStyle={styles.listContent}
+        />
       </View>
-      <FlatList
-        data={entries}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.user_id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
-        contentContainerStyle={styles.listContent}
-      />
+      <BottomNavigation />
     </View>
   );
 }
@@ -127,21 +132,37 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f7fa',
+  },
+  content: {
+    flex: 1,
   },
   header: {
-    padding: 16,
-    backgroundColor: '#f8f8f8',
+    padding: 20,
+    paddingTop: 24,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#e8ecf0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   listContent: {
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingBottom: 20,
   },
   centerContainer: {
     flex: 1,
@@ -152,19 +173,26 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: '#6b7280',
+    fontWeight: '500',
   },
   errorText: {
     fontSize: 16,
-    color: '#d32f2f',
+    color: '#ef4444',
     textAlign: 'center',
     marginBottom: 16,
+    fontWeight: '500',
   },
   retryButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: '#2196F3',
-    borderRadius: 8,
+    borderRadius: 10,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   retryText: {
     color: '#fff',
