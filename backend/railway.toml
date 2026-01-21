@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "go build -o server cmd/server/main.go"
+buildCommand = "go build -o server cmd/server/main.go && go build -o seed cmd/seed/main.go"
 
 [deploy]
 startCommand = "./server"
