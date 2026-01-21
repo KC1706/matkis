@@ -1,21 +1,10 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect } from 'expo-router';
 
 export default function IndexScreen() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirect to leaderboard immediately
-    router.replace('/leaderboard');
-  }, [router]);
-
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#2196F3" />
-      <Text style={styles.text}>Loading...</Text>
-    </View>
-  );
+  // Use Redirect component which handles timing automatically
+  return <Redirect href="/leaderboard" />;
 }
 
 const styles = StyleSheet.create({
