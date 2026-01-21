@@ -35,39 +35,55 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	// Get leaderboard entries from Redis
+	// Get leaderboard entries from Redis (sorted by rating)
 	entries, err := h.rankService.GetLeaderboard(c.Request.Context(), limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Get user details from PostgreSQL
-	userIDs := make([]int64, len(entries))
-	entryMap := make(map[int64]*ranking.LeaderboardEntry)
-	for i, entry := range entries {
-		userIDs[i] = entry.UserID
-		entryMap[entry.UserID] = &entries[i]
+	if len(entries) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"data": []models.LeaderboardEntry{},
+			"page": page,
+			"limit": limit,
+		})
+		return
 	}
 
-	// Fetch usernames for all entries
-	users, err := h.userRepo.GetAll(c.Request.Context(), limit, offset)
+	// Get user IDs from Redis entries
+	userIDs := make([]int64, len(entries))
+	for i, entry := range entries {
+		userIDs[i] = entry.UserID
+	}
+
+	// Fetch user details from PostgreSQL by IDs
+	users, err := h.userRepo.GetByIDs(c.Request.Context(), userIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Combine data
+	// Create map of user ID to user data
+	userMap := make(map[int64]*models.User)
+	for i := range users {
+		userMap[users[i].ID] = users[i]
+	}
+
+	// Combine Redis ranking data with PostgreSQL user data
 	response := make([]models.LeaderboardEntry, 0, len(entries))
-	for _, user := range users {
-		if entry, exists := entryMap[user.ID]; exists {
-			response = append(response, models.LeaderboardEntry{
-				Rank:     entry.Rank,
-				Username: user.Username,
-				Rating:   user.Rating,
-				UserID:   user.ID,
-			})
+	for _, entry := range entries {
+		user, exists := userMap[entry.UserID]
+		if !exists {
+			// Skip if user not found in PostgreSQL (shouldn't happen, but handle gracefully)
+			continue
 		}
+		response = append(response, models.LeaderboardEntry{
+			Rank:     entry.Rank,
+			Username: user.Username,
+			Rating:   entry.Rating, // Use rating from Redis (source of truth for ranking)
+			UserID:   user.ID,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{

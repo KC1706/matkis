@@ -32,6 +32,10 @@ ui-debug.log
 # Netlify
 .netlify/
 
+# Archived/Deprecated (old Node.js implementation)
+# netlify/functions/
+# functions/
+
 # Service account keys
 *-service-account.json
 service-account.json

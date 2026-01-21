@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/lib/pq"
 	"matkis-assignment/backend/internal/models"
 )
 
@@ -122,6 +123,52 @@ func (r *UserRepository) GetAll(ctx context.Context, limit, offset int) ([]*mode
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 	return users, nil
+}
+
+func (r *UserRepository) GetByIDs(ctx context.Context, ids []int64) ([]*models.User, error) {
+	if len(ids) == 0 {
+		return []*models.User{}, nil
+	}
+
+	// Build query with IN clause using pq.Array
+	// PostgreSQL requires array to be passed as pq.Array for ANY() operator
+	query := `
+		SELECT id, username, rating, created_at, updated_at
+		FROM users
+		WHERE id = ANY($1)
+	`
+	
+	// Use pq.Array to convert []int64 to PostgreSQL array
+	rows, err := r.db.QueryContext(ctx, query, pq.Array(ids))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users by IDs: %w", err)
+	}
+	defer rows.Close()
+
+	// Create map for quick lookup
+	userMap := make(map[int64]*models.User)
+	for rows.Next() {
+		user := &models.User{}
+		if err := rows.Scan(
+			&user.ID, &user.Username, &user.Rating, &user.CreatedAt, &user.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		userMap[user.ID] = user
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	// Return users in the same order as requested IDs
+	result := make([]*models.User, 0, len(ids))
+	for _, id := range ids {
+		if user, exists := userMap[id]; exists {
+			result = append(result, user)
+		}
+	}
+
+	return result, nil
 }
 
 func (r *UserRepository) Count(ctx context.Context) (int, error) {

@@ -1,62 +1,170 @@
-# Leaderboard Backend
+# Leaderboard Backend (Golang)
 
-Golang backend for the scalable leaderboard system.
+A scalable leaderboard system built with Golang, PostgreSQL, and Redis.
+
+## Features
+
+- Tie-aware ranking system
+- Efficient leaderboard queries using Redis sorted sets
+- Fast user search with prefix matching
+- Handles 10,000+ users efficiently
+- RESTful API with Gin framework
 
 ## Prerequisites
 
-- Go 1.21+
-- PostgreSQL 12+
-- Redis 6+
+- Go 1.21 or higher
+- PostgreSQL 12 or higher
+- Redis 6 or higher
 
-## Setup
+## Local Development Setup
 
-1. Install dependencies:
+### Option 1: Using Docker Compose (Recommended)
+
+1. Start PostgreSQL and Redis:
 ```bash
-go mod download
+docker-compose up -d
 ```
 
-2. Create a `.env` file:
-```env
-PORT=8080
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=leaderboard
-REDIS_ADDR=localhost:6379
-REDIS_PASSWORD=
-REDIS_DB=0
+2. Run database migrations:
+```bash
+make migrate
+# Or manually:
+psql -h localhost -U postgres -d leaderboard -f migrations/schema.sql
 ```
 
-3. Create the database:
+3. Copy environment file:
+```bash
+cp .env.example .env
+```
+
+4. Start the server:
+```bash
+make run
+```
+
+5. Seed the database (optional):
+```bash
+make seed
+```
+
+### Option 2: Using Local PostgreSQL and Redis
+
+1. Ensure PostgreSQL and Redis are running locally
+
+2. Create the database:
 ```bash
 createdb leaderboard
 ```
 
-4. Run migrations:
+3. Run migrations:
 ```bash
-psql -d leaderboard -f migrations/schema.sql
+psql -h localhost -U postgres -d leaderboard -f migrations/schema.sql
 ```
 
-5. Seed the database:
+4. Copy and configure environment:
 ```bash
-go run cmd/seed/main.go
+cp .env.example .env
+# Edit .env with your database credentials
 ```
 
-6. Start the server:
+5. Start the server:
 ```bash
-go run cmd/server/main.go
+make run
+```
+
+6. Seed the database:
+```bash
+make seed
 ```
 
 ## API Endpoints
 
-- `GET /api/leaderboard?page=1&limit=50` - Get paginated leaderboard
-- `GET /api/search?q=username` - Search users by prefix
-- `POST /api/users` - Create a new user
-- `POST /api/users/:id/update-rating` - Update user rating
+### Get Leaderboard
+```
+GET /api/leaderboard?page=1&limit=50
+```
+
+Response:
+```json
+{
+  "data": [
+    {
+      "rank": 1,
+      "username": "user1",
+      "rating": 5000,
+      "user_id": 1
+    }
+  ],
+  "page": 1,
+  "limit": 50
+}
+```
+
+### Search Users
+```
+GET /api/search?q=rahul
+```
+
+Response:
+```json
+{
+  "data": [
+    {
+      "global_rank": 200,
+      "username": "rahul",
+      "rating": 4600
+    }
+  ]
+}
+```
+
+### Create User
+```
+POST /api/users
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "rating": 2500
+}
+```
+
+### Update User Rating
+```
+POST /api/users/:id/update-rating
+Content-Type: application/json
+
+{
+  "rating": 3000
+}
+```
+
+## Environment Variables
+
+- `PORT` - Server port (default: 8080)
+- `DB_HOST` - PostgreSQL host
+- `DB_PORT` - PostgreSQL port
+- `DB_USER` - PostgreSQL user
+- `DB_PASSWORD` - PostgreSQL password
+- `DB_NAME` - Database name
+- `REDIS_ADDR` - Redis address
+- `REDIS_PASSWORD` - Redis password (optional)
+- `REDIS_DB` - Redis database number (default: 0)
 
 ## Architecture
 
-- **PostgreSQL**: Persistent storage for user data
-- **Redis**: Sorted sets for efficient leaderboard queries
-- **Tie-aware ranking**: Users with same rating share the same rank
+- **PostgreSQL**: Stores user data (username, rating, timestamps)
+- **Redis**: Sorted set for efficient leaderboard queries and ranking
+- **Gin**: HTTP web framework
+- **Tie-aware ranking**: Users with the same rating get the same rank
+
+## Testing
+
+Run tests:
+```bash
+make test
+```
+
+## Deployment
+
+See deployment documentation for Railway, Render, or other platforms.

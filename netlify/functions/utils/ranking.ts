@@ -1,6 +1,4 @@
-import * as admin from 'firebase-admin';
-
-const db = admin.firestore();
+import { getFirestore } from './firebase';
 
 export interface LeaderboardEntry {
   user_id: string;
@@ -14,6 +12,7 @@ export interface LeaderboardEntry {
  * Rank = number of users with rating > user's rating + 1
  */
 export async function calculateRank(rating: number): Promise<number> {
+  const db = getFirestore();
   const higherCount = await db.collection('users')
     .where('rating', '>', rating)
     .count()
@@ -58,6 +57,7 @@ export async function getLeaderboardEntries(
   limit: number,
   offset: number
 ): Promise<LeaderboardEntry[]> {
+  const db = getFirestore();
   // Query users ordered by rating DESC, username ASC
   const snapshot = await db.collection('users')
     .orderBy('rating', 'desc')
@@ -72,20 +72,22 @@ export async function getLeaderboardEntries(
 
   const entries: LeaderboardEntry[] = [];
   let currentRank = offset + 1;
-  let prevRating = -1;
-  let rankOffset = 0;
+  let prevRating: number | null = null;
+  let sameRatingCount = 0;
 
   snapshot.forEach((doc, index) => {
     const data = doc.data();
     const rating = data.rating as number;
 
     // If rating changed, update rank
-    if (rating !== prevRating) {
-      currentRank = offset + index + 1 - rankOffset;
+    if (prevRating === null || rating !== prevRating) {
+      // New rating group - calculate rank based on position
+      currentRank = offset + index + 1;
       prevRating = rating;
-      rankOffset = 0;
+      sameRatingCount = 1;
     } else {
-      rankOffset++;
+      // Same rating - keep same rank, increment counter
+      sameRatingCount++;
     }
 
     entries.push({

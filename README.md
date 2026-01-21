@@ -1,6 +1,6 @@
 # Matkis Leaderboard System
 
-A scalable leaderboard system with search functionality, built with Firebase (Cloud Functions + Firestore) and React Native (Expo), deployed to Netlify.
+A scalable leaderboard system with search functionality, built with **Golang** (PostgreSQL + Redis) and React Native (Expo), deployed to Railway.
 
 ## Features
 
@@ -12,10 +12,11 @@ A scalable leaderboard system with search functionality, built with Firebase (Cl
 
 ## Architecture
 
-### Backend (Netlify Functions + Firebase)
-- **Netlify Functions**: Serverless functions for API endpoints
-- **Firestore**: NoSQL database for user data (Firebase)
-- **Tie-Aware Ranking**: Efficient rank calculation using Firestore queries
+### Backend (Golang)
+- **Gin Framework**: HTTP web framework
+- **PostgreSQL**: Relational database for user data
+- **Redis**: Sorted sets for efficient leaderboard queries and tie-aware ranking
+- **RESTful API**: Clean API design with proper error handling
 
 ### Frontend (React Native/Expo)
 - **Leaderboard Screen**: Paginated list with polling
@@ -25,42 +26,55 @@ A scalable leaderboard system with search functionality, built with Firebase (Cl
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- Netlify CLI: `npm install -g netlify-cli` (optional, can use web interface)
-- Firebase account (for Firestore database)
+- Go 1.21+
+- PostgreSQL 12+
+- Redis 6+
+- Node.js 18+ (for frontend)
+- Expo CLI (optional)
 
 ### Backend Setup
 
-1. **Create Firebase Project:**
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Create a new project
-   - Enable Firestore Database (test mode)
-   - Go to Project Settings → Service Accounts
-   - Generate new private key (download JSON)
-
-2. **Set Up Firestore Indexes:**
-   - In Firebase Console → Firestore → Indexes
-   - Create composite index:
-     - Collection: `users`
-     - Fields: `rating` (Descending), `username` (Ascending)
-
-3. **Configure Environment Variables:**
-   - Extract from Firebase service account JSON:
-     - `FIREBASE_PROJECT_ID`
-     - `FIREBASE_CLIENT_EMAIL`
-     - `FIREBASE_PRIVATE_KEY` (keep newlines as `\n`)
-
-4. **Install Dependencies:**
+1. **Install Dependencies:**
 ```bash
-cd netlify
-npm install
+cd backend
+go mod download
 ```
 
-5. **Seed Data (after deployment):**
+2. **Set Up Databases:**
+
+   **Option A: Using Docker Compose (Recommended)**
+   ```bash
+   cd backend
+   docker-compose up -d
+   ```
+
+   **Option B: Local PostgreSQL and Redis**
+   - Ensure PostgreSQL and Redis are running locally
+   - Create database: `createdb leaderboard`
+
+3. **Configure Environment:**
 ```bash
-curl -X POST https://your-site.netlify.app/.netlify/functions/seedUsers \
-  -H "Content-Type: application/json" \
-  -d '{"numUsers": 10000}'
+cd backend
+cp .env.example .env
+# Edit .env with your database credentials
+```
+
+4. **Run Migrations:**
+```bash
+make migrate
+# Or manually:
+psql -h localhost -U postgres -d leaderboard -f migrations/schema.sql
+```
+
+5. **Seed Data:**
+```bash
+make seed
+```
+
+6. **Start Server:**
+```bash
+make run
+# Server runs on http://localhost:8080
 ```
 
 ### Frontend Setup
@@ -72,10 +86,8 @@ npm install
 ```
 
 2. **Configure API URL:**
-Create `frontend/.env`:
-```
-EXPO_PUBLIC_API_URL=https://us-central1-your-project.cloudfunctions.net
-```
+   - For local development: Already configured to `http://localhost:8080`
+   - For production: Set `EXPO_PUBLIC_API_URL` environment variable
 
 3. **Run Locally:**
 ```bash
@@ -88,16 +100,11 @@ npm start
 npm run build:web
 ```
 
-5. **Deploy to Netlify:**
-```bash
-netlify deploy --prod
-```
-
 ## API Endpoints
 
 ### Get Leaderboard
 ```
-GET /.netlify/functions/getLeaderboard?page=1&limit=50
+GET /api/leaderboard?page=1&limit=50
 ```
 
 **Response:**
@@ -108,7 +115,7 @@ GET /.netlify/functions/getLeaderboard?page=1&limit=50
       "rank": 1,
       "username": "brandon",
       "rating": 5000,
-      "user_id": "123"
+      "user_id": 1
     }
   ],
   "page": 1,
@@ -118,7 +125,7 @@ GET /.netlify/functions/getLeaderboard?page=1&limit=50
 
 ### Search Users
 ```
-GET /.netlify/functions/searchUsers?q=rahul
+GET /api/search?q=rahul
 ```
 
 **Response:**
@@ -139,37 +146,52 @@ GET /.netlify/functions/searchUsers?q=rahul
 }
 ```
 
-### Seed Users
+### Create User
 ```
-POST /.netlify/functions/seedUsers
-Body: {"numUsers": 10000}
+POST /api/users
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "rating": 2500
+}
+```
+
+### Update User Rating
+```
+POST /api/users/:id/update-rating
+Content-Type: application/json
+
+{
+  "rating": 3000
+}
 ```
 
 ## Project Structure
 
 ```
 matkis_assignment/
-├── netlify/                # Netlify Functions
-│   ├── functions/
-│   │   ├── getLeaderboard.ts
-│   │   ├── searchUsers.ts
-│   │   ├── seedUsers.ts
-│   │   └── utils/
-│   │       └── ranking.ts
-│   └── package.json
+├── backend/                 # Golang backend
+│   ├── cmd/
+│   │   ├── server/         # Main server
+│   │   └── seed/           # Database seeding
+│   ├── internal/
+│   │   ├── api/            # HTTP handlers
+│   │   ├── config/         # Configuration
+│   │   ├── database/       # DB connections
+│   │   ├── models/         # Data models
+│   │   ├── ranking/        # Ranking service
+│   │   ├── repository/     # Database layer
+│   │   └── search/         # Search service
+│   ├── migrations/         # Database schema
+│   ├── docker-compose.yml  # Local dev setup
+│   └── Makefile           # Dev commands
 ├── frontend/               # React Native Expo app
 │   ├── app/
-│   │   ├── leaderboard.tsx
-│   │   ├── search.tsx
-│   │   └── _layout.tsx
 │   ├── components/
 │   ├── services/
-│   ├── hooks/
-│   └── package.json
-├── firebase.json
-├── firestore.rules
-├── firestore.indexes.json
-└── TESTING_GUIDE.md
+│   └── hooks/
+└── netlify/                 # Archived (old Node.js implementation)
 ```
 
 ## Testing
@@ -178,36 +200,46 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instruction
 
 ## Deployment
 
-### Backend (Netlify Functions)
-- Functions deploy automatically with Netlify
-- Set environment variables in Netlify dashboard:
-  - `FIREBASE_PROJECT_ID`
-  - `FIREBASE_CLIENT_EMAIL`
-  - `FIREBASE_PRIVATE_KEY`
-- Firestore indexes must be created in Firebase Console
+### Backend (Railway)
 
-### Frontend (Netlify)
-- Build command: `npm run build:web`
-- Publish directory: `.expo/web`
-- Functions directory: `netlify/functions`
-- Environment variable: `EXPO_PUBLIC_API_URL` (optional, defaults to relative paths)
+See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for detailed Railway deployment instructions.
+
+Quick steps:
+1. Create Railway project
+2. Add PostgreSQL and Redis services
+3. Deploy Golang backend
+4. Configure environment variables
+5. Run migrations
+6. Seed data (optional)
+
+### Frontend (Netlify/Vercel)
+
+1. Build web version:
+```bash
+cd frontend
+npm run build:web
+```
+
+2. Deploy to Netlify:
+```bash
+netlify deploy --prod
+```
+
+3. Set environment variable:
+   - `EXPO_PUBLIC_API_URL`: Your Railway backend URL
 
 ## Performance
 
-- **Leaderboard Load**: < 3 seconds for 10k+ users
-- **Search Response**: < 500ms
+- **Leaderboard Load**: < 1 second for 10k+ users (Redis sorted sets)
+- **Search Response**: < 200ms (PostgreSQL indexed queries)
 - **Polling Interval**: 3 seconds
 - **Debounce Delay**: 300ms
 
-## Free Tier Limits
+## Migration Notes
 
-### Firebase
-- Firestore: 50K reads/day, 20K writes/day
-- Cloud Functions: 2M invocations/month
+This project was migrated from Node.js/TypeScript (Netlify Functions + Firebase) to Golang (PostgreSQL + Redis) to meet assignment requirements.
 
-### Netlify
-- 100 GB bandwidth/month
-- 300 build minutes/month
+See [MIGRATION_NOTES.md](./MIGRATION_NOTES.md) for details.
 
 ## License
 

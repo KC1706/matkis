@@ -1,20 +1,10 @@
 import { Handler } from '@netlify/functions';
 import * as admin from 'firebase-admin';
-
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const db = admin.firestore();
+import { initializeFirebase, getFirestore } from './utils/firebase';
 
 export const handler: Handler = async (event, context) => {
+  // Initialize Firebase Admin if not already initialized
+  initializeFirebase();
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -88,6 +78,7 @@ export const handler: Handler = async (event, context) => {
     };
 
     // Batch write users
+    const db = getFirestore();
     for (let i = 0; i < numUsers; i += batchSize) {
       const batch = db.batch();
       const currentBatch = Math.min(batchSize, numUsers - i);

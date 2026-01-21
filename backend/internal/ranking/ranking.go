@@ -21,14 +21,14 @@ func NewRankingService(redis *redis.Client) *RankingService {
 func (s *RankingService) UpdateUserRating(ctx context.Context, userID int64, rating int) error {
 	return s.redis.ZAdd(ctx, LeaderboardKey, &redis.Z{
 		Score:  float64(rating),
-		Member: userID,
+		Member: fmt.Sprintf("%d", userID),
 	}).Err()
 }
 
 // GetRank calculates the tie-aware rank for a user
 // Rank = number of users with rating > user's rating + 1
 func (s *RankingService) GetRank(ctx context.Context, userID int64) (int, error) {
-	// Get user's rating
+	// Get user's rating (convert userID to string for Redis)
 	score, err := s.redis.ZScore(ctx, LeaderboardKey, fmt.Sprintf("%d", userID)).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -112,19 +112,21 @@ func (s *RankingService) GetLeaderboard(ctx context.Context, limit, offset int) 
 	entries := make([]LeaderboardEntry, 0, len(results))
 	currentRank := offset + 1
 	prevRating := float64(-1)
-	rankOffset := 0
 
 	for i, result := range results {
 		rating := result.Score
 		
 		// If rating changed, update rank
-		if rating != prevRating {
-			currentRank = offset + i + 1 - rankOffset
+		if prevRating == -1 || rating != prevRating {
+			// New rating group - rank is position in list (offset + index + 1)
+			currentRank = offset + i + 1
 			prevRating = rating
 		}
+		// If rating is same as previous, keep the same rank (tie-aware)
 
 		var userID int64
-		if err := fmt.Sscanf(fmt.Sprintf("%v", result.Member), "%d", &userID); err != nil {
+		count, err := fmt.Sscanf(fmt.Sprintf("%v", result.Member), "%d", &userID)
+		if err != nil || count != 1 {
 			continue
 		}
 

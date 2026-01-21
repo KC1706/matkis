@@ -1,21 +1,10 @@
 import { Handler } from '@netlify/functions';
-import * as admin from 'firebase-admin';
+import { initializeFirebase, getFirestore } from './utils/firebase';
 import { calculateRanksForUsers } from './utils/ranking';
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const db = admin.firestore();
-
 export const handler: Handler = async (event, context) => {
+  // Initialize Firebase Admin if not already initialized
+  initializeFirebase();
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -46,6 +35,7 @@ export const handler: Handler = async (event, context) => {
     const searchQuery = query.trim().toLowerCase();
     const upperBound = searchQuery.slice(0, -1) + String.fromCharCode(searchQuery.charCodeAt(searchQuery.length - 1) + 1);
 
+    const db = getFirestore();
     const snapshot = await db.collection('users')
       .where('username', '>=', searchQuery)
       .where('username', '<', upperBound)
@@ -93,10 +83,26 @@ export const handler: Handler = async (event, context) => {
     };
   } catch (error: any) {
     console.error('Error searching users:', error);
+    
+    // Check if it's a Firestore index error
+    if (error.code === 9 || error.message?.includes('index')) {
+      return {
+        statusCode: 503,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Firestore index is building. Please wait a few minutes and try again.',
+          details: error.message 
+        }),
+      };
+    }
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }),
     };
   }
 };
